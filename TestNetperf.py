@@ -117,16 +117,6 @@ class PerfMon:
         else:
             return avgThru
 
-                
-    ## Function to validate base directory and create empty file (touch)
-    def touch(self,path):
-        basedir = os.path.dirname(path)
-        if not os.path.exists(basedir):
-            os.makedirs(basedir)
-            Path(path).touch()
-            print("TEST")
-            os.utime(path, None)
-
 
     ## Function to compare throughput value obtained in test run with previous results
     '''
@@ -145,8 +135,9 @@ class PerfMon:
         TEST_PASSED = False
 
         if not os.path.exists('netperf_results.txt'):
-            print("File: 'netperf_results.txt' does not exist, creating one.")
-            open("netperf_results.txt", 'a').close()
+            print("File: 'netperf_results.txt' does not exist, creating it...")
+            #open("netperf_results.txt", 'a').close()
+            with open('netperf_results.txt', 'w'): pass
 
         # check for any existing result entries in the Results file and process accordingly - create a file if it doesn't exists
         with open('netperf_results.txt') as inputFile:
