@@ -1,8 +1,5 @@
 # /usr/local/bin/python3.7
 #
-# Created by Vasundhara Sharma on 2019-01-19.
-# Copyright © 2019 Vasundhara Sharma. All rights reserved.
-#
 # Import the required modules
 import subprocess
 import shlex
@@ -141,50 +138,62 @@ class PerfMon:
         
     '''
     def test_throughput(self, hostIP, port, testDuration, averageThroughput):
-        RESULT_STRING = hostIP + ":" + port + ":" + testDuration + ":"
+        RESULT_STRING = hostIP + ":" + port + ":" + testDuration
 
-        if not os.path.exists('test/netperf_results.txt'):
+        # Initialize the variables to False
+        PAST_RESULTS_FOUND = False
+        TEST_PASSED = False
+
+        if not os.path.exists('netperf_results.txt'):
             print("File: 'netperf_results.txt' does not exist, creating one.")
-            self.touch('netperf_results.txt')
+            open("netperf_results.txt", 'a').close()
 
-        # check for any existing result entries in the Results file and process accordingly
+        # check for any existing result entries in the Results file and process accordingly - create a file if it doesn't exists
         with open('netperf_results.txt') as inputFile:
-            with open('temp_result.txt', 'w') as tempFile:
+            with open('temp_result.txt', 'w+') as tempFile:
                 for line in inputFile:
                     if RESULT_STRING in line and not TEST_PASSED and not PAST_RESULTS_FOUND:
                         print('Found an entry which got past results from the test run.')
-                        print(line, end='')
+                        print(line)
                         PAST_RESULTS_FOUND = True
                         # fetch the throughput values for upto last 3 runs
                         # split the line from right most to have those 3 values in a list
+                        line = line.rstrip()
                         throughputValues = line.split(";") # this will give us all the run values.
+                        throughputValues = list(reversed(throughputValues)); # to place the Host details in the end
+                        del throughputValues[-1] # to leave out the Host details stored in the netperf_results.txt
                         totalThroughputValues = len(throughputValues)
                         if totalThroughputValues > 0:
                             # got some values
-                            for val in range(totalThroughputValues):
-                                if avg >= val:
+                            for val in throughputValues:
+                                if avg >= float(val):
                                     # pass the test case
                                     TEST_PASSED = True
                         if totalThroughputValues < 3:
                             # Go to the end of the LINE and add new throughput value for future use
-                            line = line.rstrip() + ";" + avg + '\n'
+                            line = line.rstrip() + ";" + str(avg)
                             tempFile.write(line)
                         else:
-                            tempFile.write(line)
-                        
-                    if not PAST_RESULTS_FOUND:
-                        # Go to the end of the file and add the entry in the file...for future usage.
-                        # as we do not have benchmark values, we will just assume that test passed, as there
-                        # are no past results to compare
-                        newLine = RESULT_STRING + ";" + avg + '\n'
-                        tempFile.write(newLine)
-                        TEST_PASSED = True
-                        print("Netperf throughput test PASSED with an average value:", avg)
+                             tempFile.write(line) # add the new entry
+
+                if TEST_PASSED:
+                    # TEST PASSED HERE
+                    # Print the log and move on...
+                    print("Netperf throughput test PASSED with an average value:", avg)
+
+                if not PAST_RESULTS_FOUND:
+                    # Go to the end of the file and add the entry in the file...for future usage.
+                    # as we do not have benchmark values, we will just assume that test passed, as there
+                    # are no past results to compare
+                    newLine = RESULT_STRING + ";" + str(avg)
+                    tempFile.write(newLine)
+                    TEST_PASSED = True
+                    print("Netperf throughput test PASSED with an average value:", avg)
                             
-                    if not TEST_PASSED:
-                        # TEST FAILED HERE
-                        # Print the log and move on...
-                        print("Netperf throughput test FAILED with an average value:", avg)
+                if not TEST_PASSED:
+                    # TEST FAILED HERE
+                    # Print the log and move on...
+                    print("Netperf throughput test FAILED with an average value:", avg)
 
         shutil.move('temp_result.txt', 'netperf_results.txt')
 
@@ -225,7 +234,7 @@ args = vars(ap.parse_args()) # parses all command line arguments and stores in a
 
 # Process all the "required" command arguments to generate netperf command
 loopNum = args["loopCount"]
-command = "/usr/local/bin/netperf"
+command = "netperf"
 
 # check if "host" argument is a valid Ipv4 address or a string representing hostname
 if ((ipaddress.ip_address(args["hostIp"])) or (type(args["hostIp"] == str))):
