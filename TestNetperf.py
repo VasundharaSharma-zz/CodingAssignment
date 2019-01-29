@@ -136,7 +136,6 @@ class PerfMon:
 
         if not os.path.exists('netperf_results.txt'):
             print("File: 'netperf_results.txt' does not exist, creating it...")
-            #open("netperf_results.txt", 'a').close()
             with open('netperf_results.txt', 'w'): pass
 
         # check for any existing result entries in the Results file and process accordingly - create a file if it doesn't exists
